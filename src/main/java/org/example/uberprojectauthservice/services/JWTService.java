@@ -1,5 +1,8 @@
 package org.example.uberprojectauthservice.services;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 @Service
 public class JWTService implements CommandLineRunner {
@@ -21,6 +25,7 @@ public class JWTService implements CommandLineRunner {
     @Value("${jwt.SECRET}")
     private String SECRET;
 
+    // Generates a JWT token with payload and username
     public String generateToken (Map<String,Object> payload, String username){
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiry*1000L);
@@ -36,13 +41,67 @@ public class JWTService implements CommandLineRunner {
                 .compact();
     }
 
+    // Extracts a specific JWT default key-value pair from the JWT Claim/payLoad
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+
+    // Extracts a specific custom key-value pair from the Claim/payLoad
+    public Object extractPayLoad(String token, String payLoadKey){
+        final Claims claims = extractAllClaims(token);
+        return (Object) claims.get(payLoadKey);
+    }
+
+    // Extracts all claims from the JWT token
+    private Claims extractAllClaims(String token) {
+        JwtParser parser = Jwts.parser()
+                .verifyWith(getSignKey())
+                .build();
+        Jws<Claims> claims = parser.parseSignedClaims(token);  // New method to parse claims securely
+
+        return claims.getPayload();   // Use getPayLoad() instead of getBody()
+    }
+
+    // Retrieves the signing key for token verification
+    private SecretKey getSignKey() {
+        return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+    }
+
+    // Extracts the expiration date from the JWT token
+    private Date extractExpiration(String token) {
+        return extractAllClaims(token).getExpiration();
+    }
+
+    // Extracts the username (subject) from the JWT token
+    private String extractUsername(String token){
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    // Checks if the JWT token is expired
+    private Boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
+    }
+
+    // Validates the token by checking the email and expiration status
+    private Boolean validateToken (String token,String email){
+        final String userEmailFetchedFromToken = extractClaim(token, Claims::getSubject);
+        return userEmailFetchedFromToken.equals(email) && !isTokenExpired(token);
+    }
+
 
     @Override
     public void run(String... args) throws Exception {
         Map<String,Object> map = new HashMap<>();
         map.put("email","admin@mail.com");
         map.put("phone","9874674999");
-        String token = generateToken(map,"admin");
+        String token = generateToken(map,"admin@mail.com");
         System.out.println(token);
+
+        System.out.println(extractUsername(token));
+        System.out.println(extractExpiration(token));
+        System.out.println(validateToken(token,"admin@mail.com"));
+        System.out.println(extractPayLoad(token,"phone"));
     }
 }
