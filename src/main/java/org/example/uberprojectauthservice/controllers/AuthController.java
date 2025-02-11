@@ -3,7 +3,6 @@ package org.example.uberprojectauthservice.controllers;
 
 import org.example.uberprojectauthservice.dto.PassengerResponseDto;
 import org.example.uberprojectauthservice.dto.PassengerSignUpRequestDto;
-import org.example.uberprojectauthservice.models.Passenger;
 import org.example.uberprojectauthservice.services.AuthService;
 import org.example.uberprojectauthservice.utils.SuccessResponse;
 import org.springframework.http.HttpStatus;
