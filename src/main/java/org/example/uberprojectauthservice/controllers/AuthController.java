@@ -1,25 +1,49 @@
 package org.example.uberprojectauthservice.controllers;
 
 
+import jakarta.servlet.http.HttpServletResponse;
+import org.example.uberprojectauthservice.dto.AuthRequestDto;
 import org.example.uberprojectauthservice.dto.PassengerResponseDto;
 import org.example.uberprojectauthservice.dto.PassengerSignUpRequestDto;
+import org.example.uberprojectauthservice.models.Passenger;
+import org.example.uberprojectauthservice.repositories.PassengerRepository;
 import org.example.uberprojectauthservice.services.AuthService;
+import org.example.uberprojectauthservice.services.JWTService;
 import org.example.uberprojectauthservice.utils.SuccessResponse;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.example.uberprojectauthservice.utils.ErrorResponse;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController  {
 
-    private final AuthService authService;
 
-    public AuthController(AuthService authService) {
+    private final AuthService authService;
+    private final AuthenticationManager authenticationManager;
+    private final JWTService jwtService;
+    private final PassengerRepository passengerRepository;
+
+    @Value("${cookie.expiry}")
+    private int cookieExpiry;
+
+    public AuthController(AuthService authService, AuthenticationManager authenticationManager, JWTService jwtService, PassengerRepository passengerRepository) {
         this.authService = authService;
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
+        this.passengerRepository = passengerRepository;
     }
 
     @PostMapping("/signup/passenger")
@@ -34,8 +58,30 @@ public class AuthController  {
         }
     }
 
-    @GetMapping("/signin/passenger")
-    public ResponseEntity<?> signInPassenger(){
-        return new ResponseEntity<>("sign in work",HttpStatus.NOT_IMPLEMENTED);
+    @PostMapping("/signin/passenger")
+    public ResponseEntity<?> signInPassenger(@RequestBody AuthRequestDto authRequestDto, HttpServletResponse response){
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequestDto.getEmail(),authRequestDto.getPassword()));
+        if(authentication.isAuthenticated()){
+            Passenger passenger = passengerRepository.findPassengerByEmail(authRequestDto.getEmail());
+
+            Map<String, Object> payLoad = new HashMap<>();
+
+            payLoad.put("name",passenger.getName());
+            payLoad.put("email", passenger.getEmail());
+            payLoad.put("phone",passenger.getPhone());
+
+            String jwtToken = jwtService.generateToken(payLoad,passenger.getName());
+
+            ResponseCookie cookie = ResponseCookie.from("jwtToken",jwtToken)
+                    .httpOnly(true)
+                    .secure(false)  //  false for http request, true for https request
+                    .maxAge(cookieExpiry)
+                    .build();
+
+            response.setHeader(HttpHeaders.SET_COOKIE,cookie.toString());
+
+            return new ResponseEntity<>(jwtToken,HttpStatus.OK);
+        }
+        return new ResponseEntity<>("Wrong credentials",HttpStatus.UNAUTHORIZED);
     }
 }

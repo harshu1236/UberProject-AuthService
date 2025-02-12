@@ -6,8 +6,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 
-// Why we need this class ?
-
+//  Why we need this class ?
 //  Because spring security works on UserDetails polymorphic type for auth
 
 public class AuthPassengerDetails extends Passenger implements UserDetails {
@@ -29,6 +28,10 @@ public class AuthPassengerDetails extends Passenger implements UserDetails {
         return this.username;
     }
 
+    @Override
+    public String getPassword() {
+        return this.password;
+    }
     // Below set of methods are not much of concern
 
     @Override
