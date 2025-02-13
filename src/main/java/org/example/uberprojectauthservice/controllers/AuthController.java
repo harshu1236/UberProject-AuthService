@@ -1,6 +1,8 @@
 package org.example.uberprojectauthservice.controllers;
 
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.example.uberprojectauthservice.dto.AuthRequestDto;
 import org.example.uberprojectauthservice.dto.PassengerResponseDto;
@@ -73,7 +75,8 @@ public class AuthController  {
             String jwtToken = jwtService.generateToken(payLoad,passenger.getName());
 
             ResponseCookie cookie = ResponseCookie.from("jwtToken",jwtToken)
-                    .httpOnly(true)
+                    .httpOnly(true)   // httpOnly cookie can not be accessed by javaScript in the web Browser.
+                    .path("/")       //   This ensures that the cookie is sent with requests to all endpoints under /.
                     .secure(false)  //  false for http request, true for https request
                     .maxAge(cookieExpiry)
                     .build();
@@ -83,5 +86,13 @@ public class AuthController  {
             return new ResponseEntity<>(jwtToken,HttpStatus.OK);
         }
         return new ResponseEntity<>("Wrong credentials",HttpStatus.UNAUTHORIZED);
+    }
+
+    @GetMapping("/validate")
+    public ResponseEntity<?> validateToken(HttpServletRequest request){
+        for(Cookie cookie : request.getCookies()){
+            System.out.println(cookie.getName() + " " + cookie.getValue());
+        }
+        return new ResponseEntity<>("Success",HttpStatus.OK);
     }
 }

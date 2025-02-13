@@ -55,7 +55,7 @@ public class JWTService implements CommandLineRunner {
     }
 
     // Extracts all claims from the JWT token
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         JwtParser parser = Jwts.parser()
                 .verifyWith(getSignKey())
                 .build();
@@ -65,27 +65,27 @@ public class JWTService implements CommandLineRunner {
     }
 
     // Retrieves the signing key for token verification
-    private SecretKey getSignKey() {
+    public SecretKey getSignKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
     }
 
     // Extracts the expiration date from the JWT token
-    private Date extractExpiration(String token) {
+    public Date extractExpiration(String token) {
         return extractAllClaims(token).getExpiration();
     }
 
     // Extracts the username (subject) from the JWT token
-    private String extractUsername(String token){
+    public String extractUsername(String token){
         return extractClaim(token, Claims::getSubject);
     }
 
     // Checks if the JWT token is expired
-    private Boolean isTokenExpired(String token) {
+    public Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
     // Validates the token by checking the email and expiration status
-    private Boolean validateToken (String token,String email){
+    public Boolean validateToken(String token,String email){
         final String userEmailFetchedFromToken = extractClaim(token, Claims::getSubject);
         return userEmailFetchedFromToken.equals(email) && !isTokenExpired(token);
     }
