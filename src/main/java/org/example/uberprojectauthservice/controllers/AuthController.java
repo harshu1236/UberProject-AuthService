@@ -7,11 +7,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.example.uberprojectauthservice.dto.AuthRequestDto;
 import org.example.uberprojectauthservice.dto.PassengerResponseDto;
 import org.example.uberprojectauthservice.dto.PassengerSignUpRequestDto;
-import org.example.uberprojectauthservice.models.Passenger;
 import org.example.uberprojectauthservice.repositories.PassengerRepository;
 import org.example.uberprojectauthservice.services.AuthService;
 import org.example.uberprojectauthservice.services.JWTService;
 import org.example.uberprojectauthservice.utils.SuccessResponse;
+import org.example.uberprojectentityservice.models.Passenger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -75,7 +75,7 @@ public class AuthController  {
             String jwtToken = jwtService.generateToken(payLoad,passenger.getName());
 
             ResponseCookie cookie = ResponseCookie.from("jwtToken",jwtToken)
-                    .httpOnly(true)   // httpOnly cookie can not be accessed by javaScript in the web Browser.
+                    .httpOnly(true)   //  httpOnly cookie can not be accessed by javaScript in the web Browser.
                     .path("/")       //   This ensures that the cookie is sent with requests to all endpoints under /.
                     .secure(false)  //  false for http request, true for https request
                     .maxAge(cookieExpiry)
